@@ -44,6 +44,7 @@ def make_graph(d):
 
 
 def round_time(df, rd):
+    print df[0]
     return [round(x/np.timedelta64(1, 'h') * rd) / rd for x in df[0]]
 
 
@@ -74,6 +75,11 @@ def run(args_dict):
         df.end = convert_str_time(df.end)
 
     vals = df.groupby(['date', 'project']).apply(lambda x: (x['end'] - x['start']).sum())
+
+    print '*************************'
+    print 'type(vals)', type(vals)
+    print 'vals.dtype', vals.dtype
+    print '*************************'
 
     if args_dict['round']:
         vals[0] = round_time(vals, args_dict['round'])
