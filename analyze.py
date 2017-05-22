@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import argparse
 import sqlite3
 import subprocess

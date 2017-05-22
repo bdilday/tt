@@ -12,7 +12,6 @@ warnings.filterwarnings('ignore')
 
 def create_table_command_mysql():
     sql_commands = [('''
-        create database if not exists {db};
         use {db};
         create table if not exists {table} (
             id int not null auto_increment,
@@ -56,6 +55,9 @@ def run(args_dict):
     else:
         raise ValueError, 'dbengine: {} not known'.format(args_dict['dbengine'])
 
+    if args_dict['dbengine'] == 'mysql':
+        sql_commands.insert(0, 'create database if not exists {};'.format(args_dict['db']))
+
     sql_commands.append(('''
         insert into {table} (date, start, end, project)
             values ('01/01/2016', '0:00', '1:00', 'test');
@@ -67,8 +69,9 @@ def run(args_dict):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Add entry to timesheet')
-    parser.add_argument('-d', '--db', required=False, help='Name of the database '
+    parser = argparse.ArgumentParser(description='Add a time-tracking table to '
+                                     'database.')
+    parser.add_argument('-d', '--db', required=True, help='Name of the database '
                         'to create.')
     parser.add_argument('-t', '--table', required=False, help='Name of the table to '
                         'create.')

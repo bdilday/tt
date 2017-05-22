@@ -1,6 +1,6 @@
 # tt
 ## Introduction
-`tt` (time-track) is a mysql-based program to keep track of time (for consultants, etc.) using Python commmands. It is a general -- and very simple -- time tracking program. A database has the following values:
+`tt` (time-track) is a mysql- or sqlite-based program to keep track of time (for consultants, etc.) using Python commmands. It is a general -- and very simple -- time tracking program. A database has the following values:
 
 * `date`: Should entered as 'mm/dd/yyyy' (as a string).
 * `start`: The time one starts working; recorded as HH:MM. So, `8:15` would represent 8:15am and `17:45` would represent 5:45pm.
@@ -8,7 +8,10 @@
 * `project`: A string (up to 8 characters long) for identify the project to charge against.
 
 ### Configuration file
-There is a configuration file that is expected as a well called `config.cfg` (see `config.cfg.example`) that takes care of specificing some values that might be unlikely to change very often (host, database, table). These are set __only__ if not set at the command line with the Python scripts.
+There is a configuration file that is expected called `config.cfg` (see `config.cfg.example`) that takes care of specificing some values that might be unlikely to change very often (host, database, table). These are set __only__ if not set at the command line with the Python scripts.
+
+### Environmental variables
+In the `__init__` file, there are three environmental variables to be set. Two pertain to mysql use, so if your flavor of database is sqlite, these can be ignored. The third, `TT_PATH` represents the path to your clone of `tt` and is used for correctly reading the `config.cfg` file.
 
 ## Use
 ### Initializing the time-tracking database
@@ -93,6 +96,18 @@ Finally, `python analyze.py -d 01/01/2017 01/03/2017 -a all` will produce both t
 
 ## Dependencies
 This program requires a number of dependencies. First, `mysql` (or `sqlite3`) and `gnuplot` are external dependencies that are needed for proper functioning. Second, within Python, `pymysql` (or `sqlite3`) and `pandas` are dependencies.
+
+## Symbolically linking the file for use in any directory
+It may be cumbersome to type out the path name to `add` and `analyze` time data, so one option is symlinking those files for use across your system. This can be accomplished by:
+
+1. Symbolically linking the file: `ln -s add.py /usr/local/bin/add`
+2. Making it executable: `chmod +x /usr/local/bin/add`
+
+This should allow the following command, for example, from any directory:
+
+```
+$ add -t 9 -d '01/01/2017' -p gen
+```
 
 ## Conclusion
 This is a basic, but functional, time tracking program. Feel free to submit PRs if you have features to add. If there are questions, contact Matt Hoover at matthew.a.hoover at gmail.com.
