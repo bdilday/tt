@@ -7,6 +7,37 @@ import sqlite3
 
 from tt import *
 
+def insert_error_message(is_ok):
+    return '\n'.join(['{} '.format(s) for s in is_ok.items()])
+
+def formulate_insert_query(args_dict):
+    if args_dict['full_record'] is not None:
+        return ('insert into {table} (date, start, end, project) '
+                'values ("{date}", "{time_start}", "{time_end}", "{proj}");'.format(
+            table=args_dict['table'], date=args_dict['date'],
+            time_start=args_dict['full_record'][0],
+            time_end=args_dict['full_record'][1],
+            proj=args_dict['project']
+        ))
+    else:
+        return ('insert into {table} (date, start, project) '
+                'values ("{date}", "{time_start}", "{proj}");'.format(
+            table=args_dict['table'], date=args_dict['date'],
+            time_start=args_dict['time'],
+            proj=args_dict['project']
+        ))
+
+def safe_insert(args_dict, sql_cursor, required_args=['table', 'time', 'date', 'project']):
+    is_ok = {}
+
+    for arg_name in required_args:
+        is_ok[arg_name] = arg_name in args_dict and not args_dict.get(arg_name) is None
+
+    if all(is_ok.values()):
+        sql_cursor.execute(formulate_insert_query(args_dict))
+    else:
+        sys.exit('You\'re trying to start a new entry, but some required keys are undefined;\n' + insert_error_message(is_ok))
+
 
 def run(args_dict):
     args_dict = update_args(args_dict)
@@ -19,6 +50,12 @@ def run(args_dict):
         db = sqlite3.connect('{}.db'.format(args_dict['db']), isolation_level=None)
     else:
         sys.exit(DB_ERROR_MESSAGE)
+
+    if args_dict['full_record'] is not None:
+        cur = db.cursor()
+        safe_insert(args_dict, cur, required_args=['table', 'full_record', 'date', 'project'])
+        cur.close()
+        return True
 
     if args_dict['close_entry']:
         if args_dict['dbengine'] == 'mysql':
@@ -47,14 +84,8 @@ def run(args_dict):
                      'Project: {}, Date: {}, Start: {}'.format(end_val[0][4],
                                                                end_val[0][1],
                                                                end_val[0][2]))
-        if args_dict['date'] and args_dict['project']:
-            db.cursor().execute('insert into {table} (date, start, project) '
-                                'values ("{date}", "{time}", "{proj}");'.format(
-                                table=args_dict['table'], date=args_dict['date'],
-                                time=args_dict['time'], proj=args_dict['project']))
-        else:
-            sys.exit('You\'re trying to start a new entry; you must include a date '
-                     'and a project.')
+        cur = db.cursor()
+        safe_insert(args_dict, cur)
 
     db.cursor().close()
     db.close()
@@ -62,7 +93,8 @@ def run(args_dict):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Add entry to timesheet')
-    parser.add_argument('-t', '--time', required=True, help='Enter time as '
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-t', '--time', required=False, help='Enter time as '
                         'HH:MM using the 24-hour clock.')
     parser.add_argument('-d', '--date', required=False, help='Enter date of '
                         'entry as a string in the form, `mm/dd/yyy`')
@@ -71,6 +103,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--close_entry', action='store_true', help='Flag to '
                         'determine if entry should be `start` or `end` for the entry; '
                         'with flag, entry is closed.')
+    group.add_argument('-r', '--full_record', nargs=2, help='Store a full record, i.e. '
+                        'an open time and a close time. Must be followed by exactly two time strings.',
+                        required=False, default=None)
     parser.add_argument('--host', required=False, help='Database host; will default to '
                         'config settings.')
     parser.add_argument('--db', required=False, help='Database name; will default to '
